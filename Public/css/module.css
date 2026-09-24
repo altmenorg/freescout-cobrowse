@@ -1,0 +1,21 @@
+/* Cobrowse.io integration for FreeScout */
+
+.cobrowse-block .cobrowse-help { margin-bottom: 8px; }
+.cobrowse-block .cobrowse-warn { font-size: 12px; }
+
+/* Floating frame, bottom right (moved to <body> by module.js) */
+.cobrowse-frame { display: none; position: fixed; right: 16px; bottom: 16px; z-index: 1050; width: 480px; max-width: calc(100vw - 32px); height: 640px; max-height: calc(100vh - 90px); overflow: hidden; background: #fff; border: 1px solid #cfd7df; border-radius: 10px; box-shadow: 0 12px 40px rgba(18, 52, 77, .25); }
+.cobrowse-frame.cobrowse-shown { display: block; }
+.cobrowse-frame-bar { display: flex; align-items: center; justify-content: space-between; height: 34px; padding: 0 10px; border-bottom: 1px solid #e5e9ee; font-weight: 600; color: #12344d; }
+.cobrowse-frame iframe { display: block; width: 100%; height: calc(100% - 34px); border: 0; background: #fff; }
+.cobrowse-frame .cobrowse-tools { display: inline-flex; gap: 4px; }
+/* same size for the three buttons; the close "×" is a character, enlarged to match the icons */
+.cobrowse-frame .cobrowse-tools .btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 24px; padding: 0; }
+.cobrowse-frame .cobrowse-tools .cobrowse-close { font-size: 20px; line-height: 1; padding-bottom: 2px; } /* the × glyph sits low in its line box */
+/* Maximized: the whole window with a 16 px margin */
+.cobrowse-frame.cobrowse-max { top: 16px; left: 16px; right: 16px; bottom: 16px; width: auto; height: auto; max-width: none; max-height: none; }
+.cobrowse-frame:fullscreen { width: 100%; height: 100%; max-width: none; max-height: none; border-radius: 0; }
+
+/* /cobrowse full page */
+.cobrowse-page iframe { display: block; width: 100%; height: calc(100vh - 110px); border: 0; }
+.cobrowse-page-warn { margin: 8px 16px; }

@@ -1,0 +1,14 @@
+{
+    "name": "altmenorg/freescout-cobrowse",
+    "description": "Cobrowse.io integration for FreeScout",
+    "license": "AGPL-3.0-only",
+    "extra": {
+        "laravel": {
+            "providers": ["Modules\\Cobrowse\\Providers\\CobrowseServiceProvider"],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": { "Modules\\Cobrowse\\": "" }
+    }
+}
