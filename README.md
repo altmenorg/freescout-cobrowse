@@ -14,6 +14,10 @@ floating frame, plus a full-page Cobrowse.io dashboard.
 - **Full-page dashboard** at `/cobrowse`, linked from the top menu.
 - English and French.
 
+![Co-browsing block in the conversation sidebar](screenshots/cobrowse-sidebar.png)
+
+![Settings page](screenshots/cobrowse-settings.png)
+
 ## Requirements
 
 - FreeScout 1.8 or newer

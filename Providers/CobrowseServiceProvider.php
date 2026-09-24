@@ -176,6 +176,22 @@ class CobrowseServiceProvider extends ServiceProvider
 
     public function hooks()
     {
+        // Left icon bar of the Modern UI theme (https://github.com/altmenorg/freescout-modern-ui): the entry comes with its
+        // own icon. No effect without that theme.
+        \Eventy::addFilter('modernui.rail_items', function ($items) {
+            if (!self::isConfigured()) {
+                return $items;
+            }
+            $items[] = [
+                'url'    => route('cobrowse.dashboard'),
+                'label'  => 'Cobrowse',
+                'icon'   => asset(\Module::getPublicPath(COBROWSE_MODULE).'/icons/cobrowse.svg'),
+                'active' => \Route::is('cobrowse.dashboard'),
+                'order'  => 500,
+            ];
+            return $items;
+        });
+
         // Top menu link to the full-page dashboard
         \Eventy::addAction('menu.append', function () {
             if (!self::isConfigured()) {

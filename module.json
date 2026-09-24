@@ -2,7 +2,7 @@
     "name": "Cobrowse",
     "alias": "cobrowse",
     "description": "Co-browse with your customers from the conversation sidebar through Cobrowse.io (6-digit code or device list, automatic agent sign-in by JWT).",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "detailsUrl": "https://github.com/altmenorg/freescout-cobrowse",
     "author": "altmenorg",
     "authorUrl": "https://github.com/altmenorg",
