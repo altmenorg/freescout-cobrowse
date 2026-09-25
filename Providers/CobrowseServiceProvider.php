@@ -176,9 +176,9 @@ class CobrowseServiceProvider extends ServiceProvider
 
     public function hooks()
     {
-        // Left icon bar of the Modern UI theme (https://github.com/altmenorg/freescout-modern-ui): the entry comes with its
-        // own icon. No effect without that theme.
-        \Eventy::addFilter('modernui.rail_items', function ($items) {
+        // Left icon bar of the Refresh interface (https://github.com/altmenorg/freescout-refresh): the entry comes with its
+        // own icon. No effect without Refresh.
+        \Eventy::addFilter('refresh.rail_items', function ($items) {
             if (!self::isConfigured()) {
                 return $items;
             }
