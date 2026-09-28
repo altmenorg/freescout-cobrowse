@@ -1,5 +1,7 @@
 # Cobrowse.io integration for FreeScout
 
+> Built as part of [Refresh](https://github.com/altmenorg/freescout-refresh), a new interface for FreeScout inspired by Freshdesk. Works with or without it.
+
 Co-browse with your customers without leaving the ticket. This [FreeScout](https://freescout.net) module adds a
 **Co-browsing** block to the conversation sidebar that opens the [Cobrowse.io](https://cobrowse.io) agent screen in a
 floating frame, plus a full-page Cobrowse.io dashboard.
@@ -57,6 +59,15 @@ Add the Cobrowse.io SDK to your website or app ([Cobrowse.io documentation](http
   (FreeScout's Content-Security-Policy blocks inline scripts).
 - The agent JWT is signed server-side with `openssl_sign` (RS256), valid for 8 hours, with the claims required by
   Cobrowse.io (`iss` = license key, `sub` = agent e-mail, `displayName`, `aud`). No external dependency.
+
+## Other modules from the Refresh project
+
+This module was built as part of [Refresh](https://github.com/altmenorg/freescout-refresh), a new interface for FreeScout. The modules of the project, all usable on their own:
+
+- **[Refresh](https://github.com/altmenorg/freescout-refresh)**: a new, Freshdesk-inspired interface for FreeScout: views, SLA badges, dashboard, properties panel, phone version.
+- **[Web Push](https://github.com/altmenorg/freescout-webpush)**: install FreeScout as an app on phones and desktops, with end-to-end encrypted Web Push notifications.
+- **[Freshdesk Import](https://github.com/altmenorg/freescout-freshdesk-import)**: import your Freshdesk tickets into FreeScout and keep them in sync until you switch over.
+- **[Claude Assistant](https://github.com/altmenorg/freescout-claude-assistant)**: draft and improve replies with Claude, from the reply editor.
 
 ## License
 
