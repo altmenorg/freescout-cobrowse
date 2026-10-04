@@ -27,10 +27,12 @@ floating frame, plus a full-page Cobrowse.io dashboard.
 
 ## Installation
 
-1. Download this repository and copy it to `Modules/Cobrowse` in your FreeScout installation
+1. Download [`Cobrowse.zip`](https://github.com/altmenorg/freescout-cobrowse/releases/latest/download/Cobrowse.zip) from the latest release and unzip it into the `Modules` folder of FreeScout: you get `Modules/Cobrowse`
    (the folder **must** be named `Cobrowse`).
 2. In FreeScout, go to **Manage › Modules** and activate **Cobrowse**.
 3. Go to **Manage › Settings › Cobrowse** and fill in your settings.
+
+**Updates:** from version 1.1.3, FreeScout tells you in **Manage › Modules** when a new version is out, and the **Update** button installs it in one click. From an older version, update once by hand as above.
 
 ## Configuration
 
