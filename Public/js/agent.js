@@ -27,7 +27,8 @@
     var ws = null;
     var replayer = null;
     var started = false;
-    var view = {width: 0, height: 0, scale: 1};
+    var view = {width: 0, height: 0, scale: 1, actual: false};
+    var sizeBtn = $('cb-size');
     var pointerOn = false;
     var lastSent = 0;
     var ended = false;
@@ -126,8 +127,10 @@
         }
         var w = stage.clientWidth;
         var h = stage.clientHeight;
-        var scale = Math.min(w / view.width, h / view.height, 1);
+        // fit the frame, or the customer's real size (100 %, the stage scrolls)
+        var scale = view.actual ? 1 : Math.min(w / view.width, h / view.height, 1);
         view.scale = scale;
+        stage.classList.toggle('is-actual', view.actual);
         var left = Math.max(0, (w - view.width * scale) / 2);
         var top = Math.max(0, (h - view.height * scale) / 2);
         wrapper.style.transformOrigin = '0 0';
@@ -170,6 +173,12 @@
     }
 
     window.addEventListener('resize', fit);
+    sizeBtn.addEventListener('click', function () {
+        view.actual = !view.actual;
+        sizeBtn.classList.toggle('is-on', view.actual);
+        sizeBtn.setAttribute('aria-pressed', view.actual ? 'true' : 'false');
+        fit();
+    });
 
     /* ------------------------------------------------------------------ pointer */
 
