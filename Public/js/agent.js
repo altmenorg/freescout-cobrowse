@@ -52,9 +52,18 @@
     /* ------------------------------------------------------------------ code entry (6 boxes) */
 
     var digits = Array.prototype.slice.call(document.querySelectorAll('.cb-digits input'));
-    var submit = document.querySelector('#cb-code-form button[type=submit]');
     var code = function () { return digits.map(function (d) { return d.value; }).join(''); };
-    var refresh = function () { submit.disabled = !/^\d{6}$/.test(code()); };
+    var tried = '';
+    // no button: the session opens as soon as the six digits are there (once per code)
+    var refresh = function () {
+        var c = code();
+        if (/^\d{6}$/.test(c) && c !== tried) {
+            tried = c;
+            connect(c);
+        } else if (c.length < 6) {
+            tried = '';
+        }
+    };
 
     digits.forEach(function (input, i) {
         input.addEventListener('input', function () {
@@ -90,9 +99,8 @@
 
     $('cb-code-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        if (!submit.disabled) {
-            connect(code());
-        }
+        tried = '';
+        refresh();
     });
 
     screens.status.querySelector('.cb-back').addEventListener('click', reset);

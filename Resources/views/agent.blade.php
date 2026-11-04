@@ -36,7 +36,6 @@
                     <input type="text" inputmode="numeric" autocomplete="one-time-code" aria-label="{{ __('Digit') }} {{ $i + 1 }}">
                 @endfor
             </div>
-            <button type="submit" class="cb-btn cb-btn-primary" disabled>{{ __('Connect') }}</button>
             <p class="cb-error" id="cb-error" hidden></p>
         </form>
     </section>
