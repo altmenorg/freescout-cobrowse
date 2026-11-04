@@ -1,8 +1,8 @@
 {
     "name": "Cobrowse",
     "alias": "cobrowse",
-    "description": "Co-browse with your customers from the conversation sidebar through Cobrowse.io (6-digit code or device list, automatic agent sign-in by JWT).",
-    "version": "1.1.3",
+    "description": "Free, self-hosted co-browsing for FreeScout: see your customer's page live from the ticket and point where to click, with no subscription (rrweb and a small relay on your server). Also works with Cobrowse.io.",
+    "version": "1.2.0",
     "detailsUrl": "https://github.com/altmenorg/freescout-cobrowse",
     "latestVersionUrl": "https://github.com/altmenorg/freescout-cobrowse/releases/latest/download/module.json",
     "latestVersionZipUrl": "https://github.com/altmenorg/freescout-cobrowse/releases/latest/download/Cobrowse.zip",
@@ -11,7 +11,15 @@
     "img": "../modules/cobrowse/img/module.svg",
     "requiredAppVersion": "1.8.0",
     "license": "AGPL-3.0",
-    "keywords": ["cobrowse", "co-browsing", "screen sharing", "cobrowse.io"],
+    "keywords": [
+        "co-browsing",
+        "cobrowse",
+        "free",
+        "self-hosted",
+        "screen sharing",
+        "rrweb",
+        "cobrowse.io"
+    ],
     "active": 0,
     "order": 0,
     "providers": [

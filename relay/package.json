@@ -1,0 +1,13 @@
+{
+  "name": "freescout-cobrowse-relay",
+  "private": true,
+  "description": "WebSocket relay of the self-hosted co-browsing of the FreeScout Cobrowse module (rrweb): website <-> FreeScout",
+  "main": "relay.js",
+  "license": "AGPL-3.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "8.22.1"
+  }
+}

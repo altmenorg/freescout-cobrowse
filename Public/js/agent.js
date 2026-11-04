@@ -157,7 +157,7 @@
             showWarning: false,
             triggerFocus: false,
             // the customer's own session bar and consent dialog (website script) are not part of the page
-            insertStyleRules: ['.me-cb-ui, .cobrowse-consent { display: none !important; }']
+            insertStyleRules: ['.me-cb-ui, .fs-cb-ui, .cobrowse-consent { display: none !important; }']
         });
         replayer.on('resize', function (d) {
             view.width = d.width;
