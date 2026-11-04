@@ -58,7 +58,7 @@
             </span>
         </div>
         <div class="cb-stage" id="cb-stage">
-            {{-- the agent's mouse over the page is always shown to the customer as a pointer, a click as a ripple --}}
+            {{-- the agent's mouse is shown to the customer as a pointer while the left button is held down, a click as a ripple --}}
             <div class="cb-overlay" id="cb-overlay"></div>
             <div class="cb-away" id="cb-away" hidden></div>
         </div>

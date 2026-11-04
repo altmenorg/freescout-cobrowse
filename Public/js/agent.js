@@ -4,7 +4,7 @@
  * 1. The agent types the customer's 6-digit code; the page opens the relay WebSocket with the agent token.
  * 2. The relay asks the customer to accept; on acceptance the customer's page arrives as rrweb events and is replayed
  *    live here (rrweb Replayer, live mode), scaled to fit the frame.
- * 3. The agent's mouse over the replay is always sent to the customer as a pointer, a click as a ripple (no button).
+ * 3. The agent's mouse is shown to the customer as a pointer while the left button is held down, a click as a ripple.
  *    Coordinates are in the customer's viewport (the replay shows the customer's viewport, scrolled as on the customer's
  *    side). Nothing is clicked on the customer's page.
  * 4. "Full screen": the session fills the screen (Fullscreen API), with "Exit full screen" and "End session" at the
@@ -205,7 +205,31 @@
         return {x: Math.round((e.clientX - r.left) / view.scale), y: Math.round((e.clientY - r.top) / view.scale)};
     }
 
+    // like Cobrowse.io: the customer sees the pointer only while the agent holds the left button down; a click also
+    // draws a ripple
+    var down = false;
+
+    function release() {
+        if (down) {
+            down = false;
+            send({t: 'pointer', on: false, x: 0, y: 0});
+        }
+    }
+
+    overlay.addEventListener('mousedown', function (e) {
+        if (e.button !== 0) {
+            return;
+        }
+        e.preventDefault();
+        down = true;
+        var p = position(e);
+        lastSent = Date.now();
+        send({t: 'pointer', on: true, x: p.x, y: p.y});
+    });
     overlay.addEventListener('mousemove', function (e) {
+        if (!down) {
+            return;
+        }
         var now = Date.now();
         if (now - lastSent < 50) {
             return;
@@ -214,9 +238,9 @@
         var p = position(e);
         send({t: 'pointer', on: true, x: p.x, y: p.y});
     });
-    overlay.addEventListener('mouseleave', function () {
-        send({t: 'pointer', on: false, x: 0, y: 0});
-    });
+    window.addEventListener('mouseup', release);
+    overlay.addEventListener('mouseleave', release);
+    window.addEventListener('blur', release);
     overlay.addEventListener('click', function (e) {
         var p = position(e);
         send({t: 'click', x: p.x, y: p.y});
