@@ -1,14 +1,21 @@
 {{-- Self-hosted agent screen (provider "selfhosted"): 6-digit code, then the customer's page replayed live (rrweb), with
      a pointer the customer sees. Standalone page, loaded in the floating frame of the sidebar block or in /cobrowse.
      Behaviour: Public/js/agent.js (a file: FreeScout's CSP blocks inline scripts). --}}
+@php
+    // file date as version: a new version of the module is never served from the browser cache
+    $asset = function ($file) {
+        $path = \Module::find('Cobrowse')->getPath().'/Public'.$file;
+        return asset(\Module::getPublicPath(COBROWSE_MODULE).$file).'?v='.(is_file($path) ? filemtime($path) : '0');
+    };
+@endphp
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Cobrowse</title>
-    <link rel="stylesheet" href="{{ asset(\Module::getPublicPath(COBROWSE_MODULE).'/vendor/rrweb-2.2.0/replay.css') }}">
-    <link rel="stylesheet" href="{{ asset(\Module::getPublicPath(COBROWSE_MODULE).'/css/agent.css') }}">
+    <link rel="stylesheet" href="{{ $asset('/vendor/rrweb-2.2.0/replay.css') }}">
+    <link rel="stylesheet" href="{{ $asset('/css/agent.css') }}">
 </head>
 <body>
 <div id="cb-agent" data-relay="{{ $relay_url }}" data-token="{{ $token }}"
@@ -63,7 +70,7 @@
         </div>
     </section>
 </div>
-<script src="{{ asset(\Module::getPublicPath(COBROWSE_MODULE).'/vendor/rrweb-2.2.0/replay.js') }}"></script>
-<script src="{{ asset(\Module::getPublicPath(COBROWSE_MODULE).'/js/agent.js') }}"></script>
+<script src="{{ $asset('/vendor/rrweb-2.2.0/replay.js') }}"></script>
+<script src="{{ $asset('/js/agent.js') }}"></script>
 </body>
 </html>
