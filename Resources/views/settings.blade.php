@@ -11,6 +11,36 @@
     </div>
 
     <div class="form-group">
+        <label class="col-sm-2 control-label">{{ __('Provider') }}</label>
+        <div class="col-sm-6">
+            <select name="settings[cobrowse.provider]" class="form-control input-sized-lg">
+                <option value="cobrowseio" @if ($settings['cobrowse.provider'] != 'selfhosted') selected @endif>Cobrowse.io</option>
+                <option value="selfhosted" @if ($settings['cobrowse.provider'] == 'selfhosted') selected @endif>{{ __('Self-hosted relay (rrweb, view only with pointer)') }}</option>
+            </select>
+            <p class="form-help">{{ __('Self-hosted: no Cobrowse.io account; your website sends the page to your own relay (see the setup guide). The Cobrowse.io settings below are then ignored.') }}</p>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">{{ __('Relay URL') }}</label>
+        <div class="col-sm-6">
+            <input type="text" name="settings[cobrowse.relay_url]" value="{{ $settings['cobrowse.relay_url'] }}" class="form-control input-sized-lg" placeholder="wss://www.example.com/cobrowse/ws" />
+            <p class="form-help">
+                {{ __('Self-hosted only. WebSocket address of the relay.') }}
+                @if (!$settings['cobrowse.relay_url'] && $env_relay) {{ __('Currently set in the .env file (COBROWSE_RELAY_URL).') }} @endif
+            </p>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">{{ __('Relay secret') }}</label>
+        <div class="col-sm-6">
+            <input type="password" name="settings[cobrowse.relay_secret]" value="{{ $settings['cobrowse.relay_secret'] }}" class="form-control input-sized-lg" autocomplete="new-password" />
+            <p class="form-help">{{ __('Self-hosted only. The secret shared with the relay (32 characters or more). Signs the agents\' access. Stored encrypted.') }}</p>
+        </div>
+    </div>
+
+    <div class="form-group">
         <label class="col-sm-2 control-label">{{ __('License key') }}</label>
         <div class="col-sm-6">
             <input type="text" name="settings[cobrowse.license]" value="{{ $settings['cobrowse.license'] }}" class="form-control input-sized-lg" />

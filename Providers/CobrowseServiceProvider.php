@@ -18,12 +18,18 @@ define('COBROWSE_MODULE', 'cobrowse');
  * Settings: Manage > Settings > Cobrowse (stored as FreeScout options, private key encrypted). The COBROWSE_* .env
  * variables are still read as a fallback (COBROWSE_PRIVATE_KEY = path to a PEM file).
  * The iframe is only loaded when the agent clicks "Open": no call to Cobrowse.io when a ticket is merely viewed.
+ *
+ * Self-hosted mode (provider `selfhosted`, from 1.2.0): no Cobrowse.io account. The website records the customer's page
+ * with rrweb and sends it to your own WebSocket relay; the agent screen (/cobrowse/agent, Public/js/agent.js) replays it
+ * live and can show a pointer and clicks to the customer (view only, no remote control). Agents are authenticated on the
+ * relay by a short-lived token signed here with the shared secret (HMAC-SHA256). Relay and website script: see README.
  */
 class CobrowseServiceProvider extends ServiceProvider
 {
     protected $defer = false;
 
     const EMBEDS = ['code', 'dashboard', 'connect'];
+    const PROVIDERS = ['cobrowseio', 'selfhosted'];
 
     public function boot()
     {
@@ -48,9 +54,54 @@ class CobrowseServiceProvider extends ServiceProvider
         return $value;
     }
 
+    public static function provider()
+    {
+        $provider = self::setting('provider');
+        return in_array($provider, self::PROVIDERS) ? $provider : 'cobrowseio';
+    }
+
+    public static function selfHosted()
+    {
+        return self::provider() === 'selfhosted';
+    }
+
     public static function isConfigured()
     {
+        if (self::selfHosted()) {
+            return self::setting('relay_url') && self::relaySecret() !== '';
+        }
         return (bool)self::setting('license');
+    }
+
+    /** Shared secret of the self-hosted relay: encrypted option, or COBROWSE_RELAY_SECRET in .env. */
+    public static function relaySecret()
+    {
+        $stored = \Option::get('cobrowse.relay_secret', '');
+        if ($stored) {
+            try {
+                $secret = trim((string)decrypt($stored));
+                if ($secret !== '') {
+                    return $secret;
+                }
+            } catch (\Exception $e) {
+                \Log::error('[Cobrowse] cannot decrypt the stored relay secret');
+            }
+        }
+        return trim((string)config('cobrowse.relay_secret'));
+    }
+
+    /** Agent token for the self-hosted relay: base64url(JSON {n, exp}) . base64url(HMAC-SHA256), valid 8 hours. */
+    public static function relayToken($user)
+    {
+        $secret = self::relaySecret();
+        if (!$secret || !$user) {
+            return '';
+        }
+        $b64 = function ($data) {
+            return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+        };
+        $payload = $b64(json_encode(['n' => $user->getFullName(), 'exp' => time() + 8 * 3600]));
+        return $payload.'.'.$b64(hash_hmac('sha256', $payload, $secret, true));
     }
 
     /** PEM private key: encrypted option, or (legacy) path to a PEM file in COBROWSE_PRIVATE_KEY. */
@@ -105,6 +156,9 @@ class CobrowseServiceProvider extends ServiceProvider
             $settings['cobrowse.private_key'] = self::storedKeyIsSet() ? '********' : '';
             $settings['cobrowse.embed'] = \Option::get('cobrowse.embed', '') ?: 'code';
             $settings['cobrowse.help_text'] = \Option::get('cobrowse.help_text', '');
+            $settings['cobrowse.provider'] = \Option::get('cobrowse.provider', '') ?: (config('cobrowse.provider') ?: 'cobrowseio');
+            $settings['cobrowse.relay_url'] = \Option::get('cobrowse.relay_url', '');
+            $settings['cobrowse.relay_secret'] = \Option::get('cobrowse.relay_secret', '') ? '********' : '';
             return $settings;
         }, 20, 2);
 
@@ -116,10 +170,12 @@ class CobrowseServiceProvider extends ServiceProvider
                 'template_vars' => [
                     'env_license' => (bool)config('cobrowse.license'),
                     'env_key'     => (bool)config('cobrowse.private_key'),
+                    'env_relay'   => (bool)config('cobrowse.relay_url'),
                 ],
                 'settings' => [
                     // private key: masked in the form, not overwritten when left as asterisks, stored encrypted
                     'cobrowse.private_key' => ['safe_password' => true, 'encrypt' => true],
+                    'cobrowse.relay_secret' => ['safe_password' => true, 'encrypt' => true],
                 ],
             ];
         }, 20, 2);
@@ -139,9 +195,24 @@ class CobrowseServiceProvider extends ServiceProvider
                 if (!self::isConfigured()) {
                     abort(404);
                 }
+                if (self::selfHosted()) {
+                    return view('cobrowse::dashboard', ['url' => route('cobrowse.agent'), 'has_token' => true]);
+                }
                 $token = self::makeJwt(auth()->user());
                 return view('cobrowse::dashboard', ['url' => self::embedUrl('dashboard', $token, null, true), 'has_token' => (bool)$token]);
             })->name('cobrowse.dashboard');
+
+            // Self-hosted agent screen (loaded in the floating frame or the full page)
+            \Route::get('/cobrowse/agent', function () {
+                // available as soon as the relay is set, so it can be tried before switching the provider
+                if (!self::setting('relay_url') || self::relaySecret() === '') {
+                    abort(404);
+                }
+                return response()->view('cobrowse::agent', [
+                    'relay_url' => (string)self::setting('relay_url'),
+                    'token'     => self::relayToken(auth()->user()),
+                ]);
+            })->name('cobrowse.agent');
         });
     }
 
@@ -206,12 +277,13 @@ class CobrowseServiceProvider extends ServiceProvider
                 return; // installed but not configured: nothing to show
             }
             $embed = self::setting('embed');
-            if (!in_array($embed, self::EMBEDS)) {
+            if (!in_array($embed, self::EMBEDS) || self::selfHosted()) {
                 $embed = 'code';
             }
-            $token = self::makeJwt(auth()->user());
+            // self-hosted: no Cobrowse.io sign-in, the agent screen is ours
+            $token = self::selfHosted() ? 'relay' : self::makeJwt(auth()->user());
             echo \View::make('cobrowse::sidebar', [
-                'url'          => self::embedUrl($embed, $token, $conversation),
+                'url'          => self::selfHosted() ? route('cobrowse.agent') : self::embedUrl($embed, $token, $conversation),
                 'has_token'    => (bool)$token,
                 'help_text'    => (string)self::setting('help_text'),
                 'embed'        => $embed,

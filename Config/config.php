@@ -10,4 +10,10 @@ return [
     // code (6-digit code, default) | dashboard (all devices) | connect (devices filtered on the customer e-mail)
     'embed'       => env('COBROWSE_EMBED', 'code'),
     'help_text'   => env('COBROWSE_HELP_TEXT', ''),
+    // cobrowseio (default) | selfhosted (your own rrweb relay, no Cobrowse.io account)
+    'provider'     => env('COBROWSE_PROVIDER', ''),
+    // Self-hosted relay WebSocket URL, e.g. wss://www.example.com/cobrowse/ws
+    'relay_url'    => env('COBROWSE_RELAY_URL', ''),
+    // Shared secret of the relay (32 characters or more)
+    'relay_secret' => env('COBROWSE_RELAY_SECRET', ''),
 ];
