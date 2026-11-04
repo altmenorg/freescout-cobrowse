@@ -43,8 +43,13 @@ body { font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "H
 .cb-stage { position: relative; flex: 1; overflow: hidden; background: #e5e9ee; }
 .cb-stage .replayer-wrapper { position: absolute; top: 0; left: 0; background: #fff; box-shadow: 0 2px 12px rgba(18, 52, 77, .18); }
 .cb-stage .replayer-wrapper iframe { border: 0; pointer-events: none; }
-.cb-stage.is-actual { overflow: auto; }
-.cb-overlay { position: absolute; z-index: 5; display: none; }
-.cb-overlay.is-on { display: block; cursor: crosshair; }
+/* the agent's mouse is always the customer's pointer */
+.cb-overlay { position: absolute; z-index: 5; cursor: crosshair; }
+
+/* full screen: no top bar, two buttons at the bottom */
+.cb-session.is-fs { background: #e5e9ee; }
+.cb-session.is-fs .cb-toolbar { display: none; }
+.cb-fsbar { display: none; }
+.cb-session.is-fs .cb-fsbar { position: absolute; left: 50%; bottom: 16px; z-index: 10; transform: translateX(-50%); display: flex; gap: 8px; padding: 8px; border-radius: 8px; background: rgba(18, 52, 77, .85); box-shadow: 0 6px 24px rgba(0, 0, 0, .25); }
 .cb-away { position: absolute; z-index: 6; left: 50%; top: 12px; transform: translateX(-50%); padding: 6px 12px; border-radius: 16px; background: rgba(18, 52, 77, .85); color: #fff; font-size: 13px; }
 .cb-away[hidden] { display: none; }

@@ -46,9 +46,6 @@
     "Connect": "Se connecter",
     "New code": "Nouveau code",
     "Live": "En direct",
-    "Show a pointer to the customer": "Montrer un pointeur au client",
-    "Pointer": "Pointeur",
     "End session": "Terminer la session",
-    "Show the page at the customer's real size (100 %)": "Afficher la page à la taille réelle du client (100 %)",
-    "Real size": "Taille réelle"
+    "Exit full screen": "Quitter le plein écran"
 }

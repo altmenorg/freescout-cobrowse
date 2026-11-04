@@ -4,9 +4,11 @@
  * 1. The agent types the customer's 6-digit code; the page opens the relay WebSocket with the agent token.
  * 2. The relay asks the customer to accept; on acceptance the customer's page arrives as rrweb events and is replayed
  *    live here (rrweb Replayer, live mode), scaled to fit the frame.
- * 3. "Pointer": the agent's mouse over the replay is sent to the customer as a pointer, a click as a ripple. Coordinates
- *    are in the customer's viewport (the replay shows the customer's viewport, scrolled as on the customer's side).
- *    Nothing is clicked on the customer's page.
+ * 3. The agent's mouse over the replay is always sent to the customer as a pointer, a click as a ripple (no button).
+ *    Coordinates are in the customer's viewport (the replay shows the customer's viewport, scrolled as on the customer's
+ *    side). Nothing is clicked on the customer's page.
+ * 4. "Full screen": the session fills the screen (Fullscreen API), with "Exit full screen" and "End session" at the
+ *    bottom.
  */
 (function () {
     'use strict';
@@ -22,14 +24,11 @@
     var screens = {code: $('cb-code'), status: $('cb-status'), session: $('cb-session')};
     var stage = $('cb-stage');
     var overlay = $('cb-overlay');
-    var pointerBtn = $('cb-pointer');
 
     var ws = null;
     var replayer = null;
     var started = false;
-    var view = {width: 0, height: 0, scale: 1, actual: false};
-    var sizeBtn = $('cb-size');
-    var pointerOn = false;
+    var view = {width: 0, height: 0, scale: 1};
     var lastSent = 0;
     var ended = false;
 
@@ -127,10 +126,8 @@
         }
         var w = stage.clientWidth;
         var h = stage.clientHeight;
-        // fit the frame, or the customer's real size (100 %, the stage scrolls)
-        var scale = view.actual ? 1 : Math.min(w / view.width, h / view.height, 1);
+        var scale = Math.min(w / view.width, h / view.height, 1);
         view.scale = scale;
-        stage.classList.toggle('is-actual', view.actual);
         var left = Math.max(0, (w - view.width * scale) / 2);
         var top = Math.max(0, (h - view.height * scale) / 2);
         wrapper.style.transformOrigin = '0 0';
@@ -173,11 +170,24 @@
     }
 
     window.addEventListener('resize', fit);
-    sizeBtn.addEventListener('click', function () {
-        view.actual = !view.actual;
-        sizeBtn.classList.toggle('is-on', view.actual);
-        sizeBtn.setAttribute('aria-pressed', view.actual ? 'true' : 'false');
-        fit();
+
+    /* ------------------------------------------------------------------ full screen */
+
+    function exitFullscreen() {
+        if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+
+    $('cb-fs').addEventListener('click', function () {
+        if (screens.session.requestFullscreen) {
+            screens.session.requestFullscreen();
+        }
+    });
+    $('cb-fs-exit').addEventListener('click', exitFullscreen);
+    document.addEventListener('fullscreenchange', function () {
+        screens.session.classList.toggle('is-fs', document.fullscreenElement === screens.session);
+        setTimeout(fit, 50);
     });
 
     /* ------------------------------------------------------------------ pointer */
@@ -187,21 +197,7 @@
         return {x: Math.round((e.clientX - r.left) / view.scale), y: Math.round((e.clientY - r.top) / view.scale)};
     }
 
-    function setPointer(on) {
-        pointerOn = on;
-        pointerBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        pointerBtn.classList.toggle('is-on', on);
-        overlay.classList.toggle('is-on', on);
-        if (!on) {
-            send({t: 'pointer', on: false, x: 0, y: 0});
-        }
-    }
-
-    pointerBtn.addEventListener('click', function () { setPointer(!pointerOn); });
     overlay.addEventListener('mousemove', function (e) {
-        if (!pointerOn) {
-            return;
-        }
         var now = Date.now();
         if (now - lastSent < 50) {
             return;
@@ -211,23 +207,21 @@
         send({t: 'pointer', on: true, x: p.x, y: p.y});
     });
     overlay.addEventListener('mouseleave', function () {
-        if (pointerOn) {
-            send({t: 'pointer', on: false, x: 0, y: 0});
-        }
+        send({t: 'pointer', on: false, x: 0, y: 0});
     });
     overlay.addEventListener('click', function (e) {
-        if (!pointerOn) {
-            return;
-        }
         var p = position(e);
         send({t: 'click', x: p.x, y: p.y});
     });
 
-    $('cb-end').addEventListener('click', function () {
-        send({t: 'end'});
-        ended = true;
-        status(L('ended'), true);
-        teardown();
+    Array.prototype.slice.call(document.querySelectorAll('.cb-end')).forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            exitFullscreen();
+            send({t: 'end'});
+            ended = true;
+            status(L('ended'), true);
+            teardown();
+        });
     });
 
     /* ------------------------------------------------------------------ relay */
@@ -244,14 +238,6 @@
         replayer = null;
         started = false;
         Array.prototype.slice.call(stage.querySelectorAll('.replayer-wrapper')).forEach(function (n) { n.remove(); });
-        setPointerSilently(false);
-    }
-
-    function setPointerSilently(on) {
-        pointerOn = on;
-        pointerBtn.setAttribute('aria-pressed', 'false');
-        pointerBtn.classList.remove('is-on');
-        overlay.classList.remove('is-on');
     }
 
     function connect(c) {
@@ -292,6 +278,7 @@
                     break;
                 case 'end':
                     if (!ended) {
+                        exitFullscreen();
                         ended = true;
                         status(msg.reason === 'refused' ? L('refused') : L('ended'), true);
                         teardown();

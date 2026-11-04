@@ -44,20 +44,22 @@
         <div class="cb-toolbar">
             <span class="cb-live"><span class="cb-live-dot"></span>{{ __('Live') }}</span>
             <span class="cb-toolbar-tools">
-                <button type="button" class="cb-tool" id="cb-pointer" title="{{ __('Show a pointer to the customer') }}" aria-pressed="false">
-                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 3l14 7-6 2-2 6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-                    <span>{{ __('Pointer') }}</span>
+                <button type="button" class="cb-tool" id="cb-fs">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>{{ __('Full screen') }}</span>
                 </button>
-                <button type="button" class="cb-tool" id="cb-size" title="{{ __("Show the page at the customer's real size (100 %)") }}" aria-pressed="false">
-                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-                    <span>{{ __('Real size') }}</span>
-                </button>
-                <button type="button" class="cb-btn cb-btn-danger" id="cb-end">{{ __('End session') }}</button>
+                <button type="button" class="cb-btn cb-btn-danger cb-end">{{ __('End session') }}</button>
             </span>
         </div>
         <div class="cb-stage" id="cb-stage">
+            {{-- the agent's mouse over the page is always shown to the customer as a pointer, a click as a ripple --}}
             <div class="cb-overlay" id="cb-overlay"></div>
             <div class="cb-away" id="cb-away" hidden></div>
+        </div>
+        {{-- full screen only: back to the window, end the session --}}
+        <div class="cb-fsbar">
+            <button type="button" class="cb-btn" id="cb-fs-exit">{{ __('Exit full screen') }}</button>
+            <button type="button" class="cb-btn cb-btn-danger cb-end">{{ __('End session') }}</button>
         </div>
     </section>
 </div>
