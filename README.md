@@ -62,8 +62,28 @@ recorder it loads).
 
 ### 1. Relay
 
-On the server that will run it (paths below assume the module is in `/var/www/freescout/Modules/Cobrowse`; copy the
-`relay` folder elsewhere if you prefer):
+**The quick way**, on a server with systemd and Node.js 18 or later (paths assume the module is in
+`/var/www/freescout/Modules/Cobrowse`):
+
+```bash
+sudo bash /var/www/freescout/Modules/Cobrowse/relay/install.sh \
+    --site https://www.example.com,https://example.com \
+    --helpdesk https://helpdesk.example.com
+```
+
+It copies the relay to `/opt/cobrowse-relay` (out of the module folder, which FreeScout replaces on each module
+update), installs its dependency, creates the shared secret in `/etc/cobrowse-secret`, sets up and starts the
+`cobrowse-relay` service, checks that it answers, and prints the web server block and the FreeScout settings to use,
+secret included. Options: `--port` (8095), `--user` (`www-data`), `--secret-file`, `--dir`; `--help` lists them.
+
+- **After a module update**, run the same command again to install the new relay. It keeps the secret, so FreeScout's
+  settings stay valid.
+- **To remove it**: `sudo bash /opt/cobrowse-relay/install.sh uninstall` (add `--purge` to delete the secret file too).
+
+Then go on with [2. Reverse proxy](#2-reverse-proxy).
+
+**By hand**, on the server that will run it (paths below assume the module is in
+`/var/www/freescout/Modules/Cobrowse`; copy the `relay` folder elsewhere if you prefer):
 
 ```bash
 cd /var/www/freescout/Modules/Cobrowse/relay
