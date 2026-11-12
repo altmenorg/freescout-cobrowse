@@ -26,6 +26,9 @@
  *                     its .cobrowse-consent__allow button accepts, .cobrowse-consent__deny / __close / __background refuse
  *   data-mask-inputs  "all" to mask every input field; by default only passwords are masked
  *   data-color        main color of the dialog, bar and pointer (default #d72d30)
+ *   data-inline-images  comma-separated fragments of the addresses of images only the signed-in customer can load
+ *                     (e.g. "/account/photo/, /private/"): they are sent in the stream instead of being reloaded by
+ *                     the agent's browser, where they would show up broken. Same origin only. Off by default.
  *
  * The session follows the customer from page to page (sessionStorage, resumed within 20 s by the relay).
  * Fonts and images of your pages are loaded by the agent's browser from your website: see "CORS" in the README.
@@ -44,6 +47,7 @@
     var CONSENT = attr('data-consent', '');
     var MASK_ALL = attr('data-mask-inputs', '') === 'all';
     var COLOR = attr('data-color', '#d72d30');
+    var INLINE = attr('data-inline-images', '').split(',').map(function (f) { return f.trim(); }).filter(Boolean);
     var STORE = 'freescout_cobrowse';
 
     var TEXTS = {
@@ -303,6 +307,115 @@
         window.visualViewport.addEventListener('resize', sendInfoSoon);
     }
 
+    /* ---------------------------------------------------------------- images only the customer can load */
+
+    // The agent screen reloads the images of the page from the website, without the customer's session: an image
+    // served to the signed-in customer only (order photo, private document…) shows up broken there. The images whose
+    // address contains one of the INLINE fragments are therefore sent in the stream, as JPEG (data URL), instead of
+    // their address. Same origin only: nothing is reloaded or changed on the customer's page. rrweb's own
+    // inlineImages option is not used: it sends every image, and sets crossorigin="anonymous" on those of another
+    // domain, which stay broken on the customer's page when that domain sends no CORS header.
+    var INLINE_MAX = 1600; // longest side sent, in pixels
+    var INLINE_WEIGHT = 2 * 1024 * 1024; // above this, the image keeps its address
+    var inlineCache = window.WeakMap ? new WeakMap() : null; // image -> {src, data}: encoded once
+    var inlineCanvas = null;
+
+    function inlineWanted(src) {
+        if (!INLINE.length || typeof src !== 'string' || src.indexOf('data:') === 0) {
+            return false;
+        }
+        try {
+            var u = new URL(src, location.href);
+            if (u.origin !== location.origin) {
+                return false;
+            }
+            return INLINE.some(function (f) { return (u.pathname + u.search).indexOf(f) >= 0; });
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function inlineData(img) {
+        if (!img || img.tagName !== 'IMG' || !img.complete || !img.naturalWidth) {
+            return null;
+        }
+        var src = img.currentSrc || img.src;
+        var known = inlineCache && inlineCache.get(img);
+        if (known && known.src === src) {
+            return known.data;
+        }
+        var data = null;
+        try {
+            var scale = Math.min(1, INLINE_MAX / Math.max(img.naturalWidth, img.naturalHeight));
+            inlineCanvas = inlineCanvas || document.createElement('canvas');
+            inlineCanvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+            inlineCanvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+            var ctx = inlineCanvas.getContext('2d');
+            ctx.fillStyle = '#fff'; // JPEG: no transparency
+            ctx.fillRect(0, 0, inlineCanvas.width, inlineCanvas.height);
+            ctx.drawImage(img, 0, 0, inlineCanvas.width, inlineCanvas.height);
+            data = inlineCanvas.toDataURL('image/jpeg', 0.8);
+            if (data.length > INLINE_WEIGHT) {
+                data = null;
+            }
+        } catch (e) { /* image redirected to another domain */
+            data = null;
+        }
+        if (inlineCache) {
+            inlineCache.set(img, {src: src, data: data});
+        }
+        return data;
+    }
+
+    function inlineAttributes(id, attributes, mirror) {
+        if (!attributes || !inlineWanted(attributes.src)) {
+            return;
+        }
+        var img = mirror.getNode(id);
+        if (!img || img.tagName !== 'IMG') {
+            return;
+        }
+        var data = inlineData(img);
+        if (data) {
+            attributes.src = data;
+            delete attributes.srcset;
+        } else if (!img.complete) {
+            // not loaded yet: its content is sent as soon as it is, as an attribute change
+            img.addEventListener('load', function () {
+                var late = inlineData(img);
+                if (late && stopRecord) {
+                    send({t: 'ev', e: {type: 3, timestamp: Date.now(), data: {source: 0, texts: [], removes: [], adds: [],
+                        attributes: [{id: id, attributes: {src: late, srcset: null}}]}}});
+                }
+            }, {once: true});
+        }
+    }
+
+    function inlineNode(node, mirror) {
+        if (!node) {
+            return;
+        }
+        if (node.type === 2 && node.tagName === 'img') {
+            inlineAttributes(node.id, node.attributes, mirror);
+        }
+        (node.childNodes || []).forEach(function (child) { inlineNode(child, mirror); });
+    }
+
+    function inlineImages(event, mirror) {
+        if (!INLINE.length || !mirror || !event || !event.data) {
+            return;
+        }
+        try {
+            if (event.type === 2) {
+                inlineNode(event.data.node, mirror); // full snapshot and added nodes
+            } else if (event.type === 3 && event.data.source === 0) {
+                (event.data.adds || []).forEach(function (add) { inlineNode(add.node, mirror); });
+                // src changed on an existing image
+                (event.data.attributes || []).forEach(function (change) { inlineAttributes(change.id, change.attributes, mirror); });
+            }
+        } catch (e) { /* the event goes as it is */ }
+    }
+
     /* ---------------------------------------------------------------- recording */
 
     function startRecording() {
@@ -317,6 +430,7 @@
             }
             stopRecord = rr.record({
                 emit: function (event) {
+                    inlineImages(event, rr.record && rr.record.mirror);
                     if (ws && ws.readyState === 1) {
                         ws.send(JSON.stringify({t: 'ev', e: event}));
                     }

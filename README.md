@@ -159,6 +159,7 @@ page to page, until either side ends the session.
 | `data-consent` | selector of your own consent dialog, if you prefer it to the built-in one: it gets the class `is-open` while asking; its `.cobrowse-consent__allow` button accepts, `.cobrowse-consent__deny`, `__close` and `__background` decline |
 | `data-mask-inputs` | `all` to mask every field the customer types in; by default only passwords are masked, so the agent sees exactly what the customer sees |
 | `data-color` | main color of the dialog, bar and pointer (hex, default `#d72d30`) |
+| `data-inline-images` | since 1.3, off by default. Comma-separated fragments of the addresses of images that only the signed-in customer can load (`/account/photo/, /private/`). The agent's browser reloads the images of the page from your website without the customer's session, so these show up broken on the agent screen; listed here, they are sent in the stream instead (JPEG, 1600 px at most, 2 MB at most each). Same origin only, and nothing is changed on the customer's page — which is why rrweb's own `inlineImages` is not used: it sends every image and sets `crossorigin` on those of other domains, breaking them for the customer when that domain sends no CORS header |
 
 If your website has a Content-Security-Policy, allow the relay in `connect-src` (`wss://www.example.com`).
 
