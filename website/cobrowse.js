@@ -13,6 +13,8 @@
  * Flow: the customer clicks the link and reads the 6-digit code to the agent; the agent types it in FreeScout; the
  * customer is asked to accept; the page is then sent to the agent (rrweb) until either side ends the session. The agent
  * cannot act on the page: a pointer is shown while the agent holds the left button down, and a ripple on each click.
+ * Once the customer has accepted, the agent is also told which browser, system and screen the customer uses (what the
+ * browser says about itself: user agent, window and screen size, zoom, touch, language, time zone).
  *
  * Options (attributes of the script tag):
  *   data-relay        WebSocket address of the relay (required)
@@ -230,6 +232,77 @@
         });
     }
 
+    /* ---------------------------------------------------------------- device information */
+
+    // What the browser says about itself, for the agent's "Device" panel. Sent only once the customer has accepted.
+    function deviceInfo() {
+        var n = navigator;
+        var s = window.screen || {};
+        var vv = window.visualViewport;
+        var i = {
+            ua: String(n.userAgent || '').slice(0, 400),
+            platform: String(n.platform || '').slice(0, 40),
+            lang: String(n.language || '').slice(0, 20),
+            touch: n.maxTouchPoints || 0,
+            vw: window.innerWidth || 0,
+            vh: window.innerHeight || 0,
+            sw: s.width || 0,
+            sh: s.height || 0,
+            dpr: Math.round((window.devicePixelRatio || 1) * 100) / 100,
+            zoom: vv && vv.scale ? Math.round(vv.scale * 100) / 100 : 1,
+            orient: (s.orientation && s.orientation.type)
+                || ((window.innerWidth || 0) > (window.innerHeight || 0) ? 'landscape' : 'portrait'),
+            tz: ''
+        };
+        try { i.tz = String(Intl.DateTimeFormat().resolvedOptions().timeZone || '').slice(0, 60); } catch (e) { /* old browser */ }
+        var d = n.userAgentData;
+        if (d) {
+            i.uad = {
+                brands: (d.brands || []).slice(0, 6).map(function (b) { return String(b.brand).slice(0, 40) + ' ' + String(b.version).slice(0, 20); }),
+                platform: String(d.platform || '').slice(0, 40),
+                mobile: !!d.mobile
+            };
+            if (hints) {
+                i.uad.platformVersion = String(hints.platformVersion || '').slice(0, 20);
+                i.uad.model = String(hints.model || '').slice(0, 60);
+                i.uad.full = (hints.fullVersionList || []).slice(0, 6).map(function (b) { return String(b.brand).slice(0, 40) + ' ' + String(b.version).slice(0, 30); });
+            }
+        }
+        return i;
+    }
+
+    var hints = null; // Chromium only: real system version, device model and full browser version
+    var infoTimer = null;
+
+    function sendInfo() {
+        if (state && state.consent) {
+            send({t: 'info', i: deviceInfo()});
+        }
+    }
+
+    function sendInfoSoon() {
+        clearTimeout(infoTimer);
+        infoTimer = setTimeout(sendInfo, 400);
+    }
+
+    function startInfo() {
+        sendInfo();
+        var d = navigator.userAgentData;
+        if (!hints && d && d.getHighEntropyValues) {
+            d.getHighEntropyValues(['platformVersion', 'model', 'fullVersionList']).then(function (h) {
+                hints = h || {};
+                sendInfo();
+            }, function () { /* refused: the low-entropy values are enough */ });
+        }
+    }
+
+    // window resized, tablet rotated, page zoomed
+    window.addEventListener('resize', sendInfoSoon);
+    window.addEventListener('orientationchange', sendInfoSoon);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', sendInfoSoon);
+    }
+
     /* ---------------------------------------------------------------- recording */
 
     function startRecording() {
@@ -237,6 +310,7 @@
             return;
         }
         showBar();
+        startInfo();
         loadRecorder().then(function (rr) {
             if (!state || !state.consent || stopRecord) {
                 return;

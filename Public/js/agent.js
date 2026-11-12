@@ -9,6 +9,9 @@
  *    side). Nothing is clicked on the customer's page.
  * 4. "Full screen": the session fills the screen (Fullscreen API), with "Exit full screen" and "End session" at the
  *    bottom.
+ * 5. "Device": a panel with the customer's browser, system, window and screen size (the `info` message of the website
+ *    script, read by Public/js/device.js). Everything in it comes from the customer's browser: it is written as text,
+ *    never as HTML.
  */
 (function () {
     'use strict';
@@ -198,6 +201,96 @@
         setTimeout(fit, 50);
     });
 
+    /* ------------------------------------------------------------------ customer's device */
+
+    var info = null;
+    var infoPanel = $('cb-info');
+    var infoToggles = Array.prototype.slice.call(document.querySelectorAll('.cb-info-toggle'));
+
+    function infoRows() {
+        if (!info || !window.cobrowseDevice) {
+            return [];
+        }
+        var d = window.cobrowseDevice(info);
+        var num = function (v) { return isFinite(+v) ? +v : 0; };
+        var join = function (parts, sep) { return parts.filter(Boolean).join(sep); };
+        var orient = /landscape/.test(String(info.orient)) ? L('landscape') : (/portrait/.test(String(info.orient)) ? L('portrait') : '');
+        var device = join([L(d.type), d.model], ' · ') + (d.desktopSite ? ' (' + L('desktopsite') + ')' : '');
+        var dpr = num(info.dpr);
+        return [
+            [L('browser'), join([join([d.browser, d.version], ' '), d.inApp ? L('inapp').replace(':app', d.inApp) : ''], ', ')],
+            [L('system'), join([d.os, d.osVersion], ' ')],
+            [L('device'), device],
+            // a tab in the background reports a window of 0 × 0
+            [L('window'), num(info.vw) && num(info.vh) ? num(info.vw) + ' × ' + num(info.vh) : ''],
+            [L('screen'), num(info.sw) && num(info.sh) ? num(info.sw) + ' × ' + num(info.sh) + (dpr && dpr !== 1 ? ' (' + L('density') + ' ' + dpr + ')' : '') : ''],
+            [L('zoom'), Math.round((num(info.zoom) || 1) * 100) + ' %'],
+            [L('touch'), num(info.touch) > 0 ? L('yes') + ' (' + num(info.touch) + ' ' + L('points') + ')' : L('no')],
+            [L('orientation'), orient],
+            [L('language'), String(info.lang || '')],
+            [L('timezone'), String(info.tz || '')],
+            [L('useragent'), String(info.ua || '')]
+        ].filter(function (row) { return row[1]; });
+    }
+
+    function renderInfo() {
+        var rows = infoRows();
+        var list = $('cb-info-list');
+        list.textContent = '';
+        rows.forEach(function (row) {
+            var dt = document.createElement('dt');
+            var dd = document.createElement('dd');
+            dt.textContent = row[0];
+            dd.textContent = row[1];
+            list.appendChild(dt);
+            list.appendChild(dd);
+        });
+        var webkit = !!(info && window.cobrowseDevice && window.cobrowseDevice(info).webkit);
+        $('cb-info-note').textContent = webkit ? L('webkit') : '';
+        $('cb-info-note').hidden = !webkit;
+        $('cb-info-empty').hidden = rows.length > 0;
+        $('cb-info-copy').hidden = rows.length === 0;
+    }
+
+    function toggleInfo(open) {
+        infoPanel.hidden = !open;
+        infoToggles.forEach(function (btn) {
+            btn.classList.toggle('is-on', open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+
+    infoToggles.forEach(function (btn) {
+        btn.addEventListener('click', function () { toggleInfo(infoPanel.hidden); });
+    });
+    infoPanel.querySelector('.cb-info-close').addEventListener('click', function () { toggleInfo(false); });
+
+    // copies the panel as text ("Browser: Chrome 141…"), to paste into the ticket
+    $('cb-info-copy').addEventListener('click', function () {
+        var btn = this;
+        var label = btn.textContent;
+        var text = infoRows().map(function (row) { return row[0] + ': ' + row[1]; }).join('\n');
+        var done = function () {
+            btn.textContent = L('copied');
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        };
+        var fallback = function () {
+            var area = document.createElement('textarea');
+            area.value = text;
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            infoPanel.appendChild(area);
+            area.select();
+            try { document.execCommand('copy'); done(); } catch (e) { /* clipboard refused */ }
+            infoPanel.removeChild(area);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, fallback);
+        } else {
+            fallback();
+        }
+    });
+
     /* ------------------------------------------------------------------ pointer */
 
     function position(e) {
@@ -269,6 +362,9 @@
         }
         replayer = null;
         started = false;
+        info = null;
+        renderInfo();
+        toggleInfo(false);
         Array.prototype.slice.call(stage.querySelectorAll('.replayer-wrapper')).forEach(function (n) { n.remove(); });
     }
 
@@ -297,6 +393,10 @@
                         ended = true;
                         status(L('refused'), true);
                     }
+                    break;
+                case 'info':
+                    info = msg.i && typeof msg.i === 'object' ? msg.i : null;
+                    renderInfo();
                     break;
                 case 'clientaway':
                     $('cb-away').textContent = L('away');

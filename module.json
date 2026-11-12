@@ -2,7 +2,7 @@
     "name": "Cobrowse",
     "alias": "cobrowse",
     "description": "Free, self-hosted co-browsing for FreeScout: see your customer's page live from the ticket and point where to click, with no subscription (rrweb and a small relay on your server). Also works with Cobrowse.io.",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "detailsUrl": "https://github.com/altmenorg/freescout-cobrowse",
     "latestVersionUrl": "https://github.com/altmenorg/freescout-cobrowse/releases/latest/download/module.json",
     "latestVersionZipUrl": "https://github.com/altmenorg/freescout-cobrowse/releases/latest/download/Cobrowse.zip",

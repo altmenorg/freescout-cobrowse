@@ -211,6 +211,13 @@ try it while your team still uses Cobrowse.io.
   **End session** at the bottom.
 - Hold the left button down to show the pointer to the customer; each click draws a ripple. Nothing is clicked on the
   customer's page.
+- **Device** (since 1.3) opens a panel with the customer's browser and version, system, kind of device, window and
+  screen size, zoom, touch screen, language and time zone, with **Copy** to paste it into the ticket. It knows the
+  usual traps: an iPad asking for the desktop site says it is a Mac, every browser on iPhone and iPad runs on Safari's
+  engine, Chrome hides the Android and Windows versions. The panel follows the window when it is resized or rotated.
+
+Upgrading from 1.2: the panel needs the three parts at 1.3 — the module, `website/cobrowse.js` on your website and
+`relay/relay.js` (restart the relay). An older website script or relay keeps working, the panel just stays empty.
 
 ### Privacy and security
 
@@ -218,6 +225,9 @@ try it while your team still uses Cobrowse.io.
 - The customer must accept each session; the bar at the bottom of the page lets them end it at any time.
 - Only pages of `COBROWSE_CLIENT_ORIGINS` can open a session, only your FreeScout can join one, with a token signed
   by FreeScout (HMAC-SHA256, valid 8 hours).
+- The **Device** panel only shows what the browser says about itself (user agent, window and screen size, zoom, touch,
+  language, time zone), sent once the customer has accepted. No IP address, no location, nothing kept after the
+  session.
 - Passwords are never sent. Payment forms in an iframe of another domain (Stripe, PayPal…) are not recorded.
 - Mention co-browsing in your privacy policy, as for any support tool.
 

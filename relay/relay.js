@@ -10,6 +10,8 @@
  * - The relay tells the customer (`agent`), who is asked to accept; once accepted (`consent`), the customer's page is
  *   recorded with rrweb and its events (`ev`) are passed to the agent as they are.
  * - The agent sends a pointer (`pointer`) and clicks (`click`), drawn on the customer's page. Nothing is clicked there.
+ * - Once accepted, the customer also sends what its browser says about itself (`info`: user agent, window and screen
+ *   size, zoom, touch, language, time zone), passed to the agent for the "Device" panel.
  * - Page change on the customer's side: the website reconnects with `resume=<code>&key=<key>` within 20 s and sends a
  *   full snapshot of the new page.
  * - Nothing is stored: a session lives while the customer is connected (10 minutes at most without an agent).
@@ -37,13 +39,14 @@ const MAX_SESSIONS = 50;
 const WAIT_AGENT_MS = 10 * 60 * 1000;
 const MAX_MESSAGE = 16 * 1024 * 1024;
 const RESUME_MS = 20 * 1000;
+const MAX_INFO = 4096;
 
 const secret = fs.readFileSync(SECRET_FILE, 'utf8').trim();
 if (secret.length < 32) {
     throw new Error('secret too short in ' + SECRET_FILE);
 }
 
-/** @type {Map<string, {key: string, client: any, agent: any|null, agentName: string, consent: boolean, timer: any, away: any}>} */
+/** @type {Map<string, {key: string, client: any, agent: any|null, agentName: string, consent: boolean, info: string|null, timer: any, away: any}>} */
 const sessions = new Map();
 
 function log(...a) {
@@ -168,7 +171,7 @@ function onClient(ws, resume, key) {
             ws.close();
             return;
         }
-        s = {key: b64url(crypto.randomBytes(18)), client: ws, agent: null, agentName: '', consent: false, timer: null, away: null};
+        s = {key: b64url(crypto.randomBytes(18)), client: ws, agent: null, agentName: '', consent: false, info: null, timer: null, away: null};
         s.timer = setTimeout(() => { if (!s.agent) endSession(code, 'timeout'); }, WAIT_AGENT_MS);
         sessions.set(code, s);
         send(ws, {t: 'code', code, key: s.key});
@@ -194,6 +197,14 @@ function onClient(ws, resume, key) {
             send(s.agent, {t: 'consent', ok: s.consent});
             if (!s.consent) {
                 endSession(code, 'refused');
+            }
+        } else if (msg.t === 'info' && s.consent && msg.i && typeof msg.i === 'object' && !Array.isArray(msg.i)) {
+        // the customer's browser, system and screen, for the agent's "Device" panel: passed on once the session is
+        // accepted, and kept (in memory only) for an agent who reconnects
+            const info = JSON.stringify({t: 'info', i: msg.i});
+            if (info.length <= MAX_INFO) {
+                s.info = info;
+                send(s.agent, info);
             }
         } else if (msg.t === 'end') {
             endSession(code, 'client');
@@ -228,6 +239,9 @@ function onAgent(ws, code, token) {
     if (s.consent) {
         // agent back: the session is already accepted, a full snapshot of the page is needed
         send(ws, {t: 'consent', ok: true});
+        if (s.info) {
+            send(ws, s.info);
+        }
         send(s.client, {t: 'snapshot'});
     } else {
         send(s.client, {t: 'agent', name});
